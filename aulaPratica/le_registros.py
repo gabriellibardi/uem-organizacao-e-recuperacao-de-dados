@@ -5,24 +5,21 @@ def main():
     except:
         print('Erro na abertura.')
         exit()
-    buffer_com_tam = leia_reg(entrada)
-    buffer = buffer_com_tam[0]
-    tam_registro = buffer_com_tam[1]
+    buffer = leia_reg(entrada)
     num_registro = 0
 
     while buffer != '':
         num_registro += 1
-        print('Registro #' + str(num_registro) + ' (Tam - ' + str(tam_registro) + '):')
+        print('Registro #' + str(num_registro) + ' (Tam - ' + str(len(buffer)) + '):')
         lista_campos = str.split(buffer, sep='|')
-        i = 1
+        num_campo = 1
         for campo in lista_campos:
             if campo != '':
-                print('    Campo #' + str(i) + ': ', end='')
-                i += 1
-            print(campo)
-        buffer_com_tam = leia_reg(entrada)
-        buffer = buffer_com_tam[0]
-        tam_registro = buffer_com_tam[1]
+                print('    Campo #' + str(num_campo) + ': ', end='')
+                num_campo += 1
+                print(campo)
+        buffer = leia_reg(entrada)
+        print()
     entrada.close()
     exit()
     
@@ -32,8 +29,8 @@ def leia_reg(entrada):
     if tam > 0:
         buffer = entrada.read(tam)
         buffer = bytes.decode(buffer)
-        return (buffer, tam)
+        return buffer
     else:
-        return ('', 0)
+        return ''
 
 main()
