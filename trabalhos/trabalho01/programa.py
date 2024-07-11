@@ -1,48 +1,77 @@
-from sys import argv
+import sys 
 import io
+import os
 
 NOME_ARQ_DADOS = 'dados.dat'
+MAX_4BYTES_INT = 4294967295
 
 def main():
-    if len(argv) != 3: # Verifica se o programa recebe o número correto de argumentos
-        raise Exception('Número inválido de argumentos.')      
-    if argv[1] == '-e':
+    if len(sys.argv) != 3: # Verifica se o programa recebe o número correto de argumentos
+        raise TypeError('Número inválido de argumentos.')      
+    if sys.argv[1] == '-e':
         try:
-            arq_operacoes = open(argv[2], 'r')
+            arq_operacoes = open(sys.argv[2], 'r')
         except:
             print('Arquivo de operações não encontrado.')
+            exit()
 
         linha = arq_operacoes.readline()
         if linha != '': # Linha do arquivo de operações possui elementos
-            elementos = linha.split()
-            operacao = elementos[0]
-            valor = elementos[1]
+            operacao = linha[0]
+            valor = linha[2:].strip()
 
         while linha: # Arquivo de operações ainda não terminou
-            if operacao == 'b':
-                busca(NOME_ARQ_DADOS, valor)
-            elif operacao == 'i':
-                insercao(NOME_ARQ_DADOS, valor)
-            elif operacao == 'r':
-                remocao(NOME_ARQ_DADOS, valor)
-            else:
-                raise Exception('Operação não encontrada.')
+            executa_operacao(operacao, NOME_ARQ_DADOS, valor)
             linha = arq_operacoes.readline()
             if linha != '':
-                elementos = linha.split()
-                operacao = elementos[0]
-                valor = elementos[1]
+                operacao = linha[0]
+                valor = linha[2:].strip()
 
         arq_operacoes.close()
 
-def busca(nome_arq_dados: str, chave_buscada: str):
+def executa_operacao(operacao: str, nome_arq_dados: str, valor: str):
     '''
-    Busca um jogo específico no arquivo de dados com o *nome_arq_dados* por meio de sua *chave*.
+    Executa a *operacao* no arquivo de dados com *nome_arq_dados*,
+    utilizando *valor* como argumento.
+    As operações são 'b' = busca;
+                     'i' = inserção;
+                     'r' = remoção;
     '''
-    arq_dados = open(nome_arq_dados, 'br')
+    tam_valor = len(valor)
+    bvalor = valor.encode()
+    chave = valor.split('|')[0]
+    if operacao == 'b':
+        try:
+            arq_dados = open(nome_arq_dados, 'br')
+        except:
+            print('Arquivo de dados não encontrado.')
+            exit()
+        print('Busca pelo registro de chave "' + chave + '"')
+        resultado = busca(arq_dados, chave)
+        print(resultado + '\n')
+    elif operacao == 'i':
+        try:
+            arq_dados = open(nome_arq_dados, 'r+b')
+        except:
+            print('Arquivo de dados não encontrado.')
+            exit()
+        print('Inserção do registro de chave "' + chave + '" (' + str(tam_valor) + ' bytes)')    
+        print('Local: ' + insercao(arq_dados, bvalor) + '\n')
+    elif operacao == 'r':
+        try:
+            arq_dados = open(nome_arq_dados, 'r+b')
+        except:
+            print('Arquivo de dados não encontrado.')
+            exit()
+        remocao(arq_dados, bvalor)
+    else:
+        raise Exception('Operação não encontrada.')
+    arq_dados.close()
 
-    print('Busca pelo registro de chave "' + chave_buscada + '"')
-
+def busca(arq_dados: io.BufferedReader, chave_buscada: str) -> str:
+    '''
+    Busca um jogo específico no *arq_dados* por meio da *chave_buscada*.
+    '''
     cabecalho = arq_dados.read(4)
     registro = le_registro(arq_dados)
     achou = False
@@ -52,18 +81,28 @@ def busca(nome_arq_dados: str, chave_buscada: str):
             achou = True
         else:
             registro = le_registro(arq_dados)
-
     if achou:
-        print(registro + '\n')
+        return registro + ' ('+ str(len(registro)) + ' bytes)'
     else:
-        print('Registro não encontrado.\n')
-    
-    arq_dados.close()
+        return 'Registro não encontrado.'
 
-def insercao():
-    return NotImplementedError
+def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> str:
+    '''
+    Insere o *bdado* no *arq_dados* e retorna o local que foi inserido.
+    O *arq_dados* e o *bdado* e estão em binário.
+    '''
+    bcabecalho = arq_dados.read(4)
+    cabecalho = int.from_bytes(bcabecalho)
+    tam_dado = len(bdado)
 
-def remocao():
+    if (cabecalho == MAX_4BYTES_INT) or (cabecalho < tam_dado):
+        local = 'fim do arquivo'
+        insercao_fim(arq_dados, bdado)  # LED tá vazia ou o dado não cabe no arquivo
+    else:
+        insercao_meio() 
+    return local
+
+def remocao(arq_dados: io.BufferedRandom, bdado: bytes):
     return NotImplementedError
 
 def le_registro(arq: io.BufferedReader) -> str:
@@ -79,5 +118,18 @@ def le_registro(arq: io.BufferedReader) -> str:
     else:
         return ''
     
+def insercao_fim(arq_dados: io.BufferedRandom, bdado: bytes):
+    '''
+    Insere o *bdado* no fim do *arq_dados*.
+    O *arq_dados* e o *bdado* estão em binário.
+    '''
+    tam_dado = len(bdado)
+    arq_dados.seek(0, os.SEEK_END)
+    arq_dados.write(tam_dado.to_bytes(2))
+    arq_dados.write(bdado)
+
+def insercao_meio():
+    return NotImplementedError
+
 if __name__ == '__main__':
     main()
