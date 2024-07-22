@@ -39,17 +39,16 @@ def le_operacoes():
         operacao = linha[0]
         valor = linha[2:].strip()
     while linha: # Arquivo de operações ainda não terminou
-        executa_operacao(operacao, NOME_ARQ_DADOS, valor)
+        executa_operacao(operacao, valor)
         linha = arq_operacoes.readline()
         if linha != '':
             operacao = linha[0]
             valor = linha[2:].strip()
     arq_operacoes.close()
 
-def executa_operacao(operacao: str, nome_arq_dados: str, valor: str):
+def executa_operacao(operacao: str, valor: str):
     '''
-    Executa a *operacao* no arquivo de dados com *nome_arq_dados*,
-    utilizando *valor* como argumento.
+    Executa a *operacao* no arquivo de dados utilizando *valor* como argumento.
     As operações são 'b' = busca;
                      'i' = inserção;
                      'r' = remoção;
@@ -58,43 +57,61 @@ def executa_operacao(operacao: str, nome_arq_dados: str, valor: str):
     chave = valor.split('|')[0]
 
     if operacao == 'b': # busca
-        try:
-            arq_dados = open(nome_arq_dados, 'br')
-        except:
-            print('Arquivo de dados não encontrado.')
-            exit()
-        registro = busca(arq_dados, chave)[0]
-        print('Busca pelo registro de chave "' + chave + '"')
-        print(registro + '\n')
-        arq_dados.close()
+        executa_busca(chave)
 
     elif operacao == 'i': # inserção
-        try:
-            arq_dados = open(nome_arq_dados, 'r+b')
-        except:
-            print('Arquivo de dados não encontrado.')
-            exit()
-        local, tamanho = insercao(arq_dados, bvalor)
-        print('Inserção do registro de chave "' + chave + '" (' + str(tamanho) + ' bytes)')    
-        print('Local: ' + local + '\n')
-        arq_dados.close()
+        executa_insercao(bvalor, chave)
 
     elif operacao == 'r': # remoção
-        try:
-            arq_dados = open(nome_arq_dados, 'r+b')
-        except:
-            print('Arquivo de dados não encontrado.')
-            exit()
-        resultado, qnt_removida, byteoffset = remocao(arq_dados, chave)
-        print('Remoção do registro de chave "' + chave + '"')
-        if resultado == False:
-            print('Erro: registro não encontrado!\n')
-        else:
-            print('Registro removido! (' + str(qnt_removida) + ' bytes)')
-            print('Local: offset = ' + str(byteoffset) + ' bytes (' + str(hex(byteoffset) + ')\n'))
-        arq_dados.close()
+        executa_remocao(chave)
     else:
         raise Exception('Operação não encontrada.')
+    
+def executa_busca(chave: str):
+    '''
+    Executa a operação de busca do registro com *chave* no arquivo de dados
+    '''
+    try:
+        arq_dados = open(NOME_ARQ_DADOS, 'br')
+    except:
+        print('Arquivo de dados não encontrado.')
+        exit()
+    registro = busca(arq_dados, chave)[0]
+    print('Busca pelo registro de chave "' + chave + '"')
+    print(registro + '\n')
+    arq_dados.close()
+
+def executa_insercao(valor: bytes, chave: str):
+    '''
+    Executa a operação de inserção do *valor* com *chave* no arquivo de dados
+    '''
+    try:
+        arq_dados = open(NOME_ARQ_DADOS, 'r+b')
+    except:
+        print('Arquivo de dados não encontrado.')
+        exit()
+    local, tamanho = insercao(arq_dados, valor)
+    print('Inserção do registro de chave "' + chave + '" (' + str(tamanho) + ' bytes)')    
+    print('Local: ' + local + '\n')
+    arq_dados.close()
+
+def executa_remocao(chave: str):
+    '''
+    Executa a operação de remoção do registro com *chave* no arquivo de dados
+    '''
+    try:
+        arq_dados = open(NOME_ARQ_DADOS, 'r+b')
+    except:
+        print('Arquivo de dados não encontrado.')
+        exit()
+    resultado, qnt_removida, byteoffset = remocao(arq_dados, chave)
+    print('Remoção do registro de chave "' + chave + '"')
+    if resultado == False:
+        print('Erro: registro não encontrado!\n')
+    else:
+        print('Registro removido! (' + str(qnt_removida) + ' bytes)')
+        print('Local: offset = ' + str(byteoffset) + ' bytes (' + str(hex(byteoffset) + ')\n'))
+    arq_dados.close()
 
 def busca(arq_dados: io.BufferedReader, chave_buscada: str) -> tuple[str, int, int]:
     '''
@@ -201,22 +218,7 @@ def insercao_led(arq_dados: io.BufferedRandom, byteoffset: int, tamanho: int):
         if tam_proximo <= tamanho: # Registro vai entrar na cabeça da LED
             insercao_cabeca_led(arq_dados, byteoffset, bproximo)
         else: # Registro vai entrar no meio da LED
-            while (bproximo != PONTEIRO_VAZIO) and (tam_proximo > tamanho):
-                batual = bproximo
-                arq_dados.seek(int.from_bytes(bproximo), os.SEEK_SET)
-                arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
-                bproximo = arq_dados.read(TAM_PONTEIRO_LED)
-                arq_dados.seek(int.from_bytes(bproximo), os.SEEK_SET)
-                tam_proximo = int.from_bytes(arq_dados.read(TAM_TAMANHO_REG))
-                print(batual)
-                print(bproximo)
-                print(tam_proximo)
-            arq_dados.seek(byteoffset, os.SEEK_SET)
-            arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
-            arq_dados.write(bproximo)
-            arq_dados.seek(int.from_bytes(batual), os.SEEK_SET)
-            arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
-            arq_dados.write(byteoffset.to_bytes(TAM_PONTEIRO_LED))
+            insercao_meio_led(arq_dados, byteoffset, bproximo, tamanho, tam_proximo)
 
 def insercao_cabeca_led(arq_dados:io.BufferedRandom, byteoffset: int, cabeca_atual: bytes):
     '''
@@ -228,6 +230,26 @@ def insercao_cabeca_led(arq_dados:io.BufferedRandom, byteoffset: int, cabeca_atu
     arq_dados.seek(byteoffset, os.SEEK_SET)
     arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
     arq_dados.write(cabeca_atual)
+
+def insercao_meio_led(arq_dados:io.BufferedRandom, byteoffset: int, bproximo: bytes,
+                       tam: int, tam_proximo: int):
+    '''
+    Insere o *byteoffset* do registro no meio ou fim da LED, mantida no *arq_dados*,
+    seguindo a organização de worst-fit.
+    '''
+    while (bproximo != PONTEIRO_VAZIO) and (tam_proximo > tam):
+        batual = bproximo
+        arq_dados.seek(int.from_bytes(bproximo), os.SEEK_SET)
+        arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
+        bproximo = arq_dados.read(TAM_PONTEIRO_LED)
+        arq_dados.seek(int.from_bytes(bproximo), os.SEEK_SET)
+        tam_proximo = int.from_bytes(arq_dados.read(TAM_TAMANHO_REG))
+    arq_dados.seek(byteoffset, os.SEEK_SET)
+    arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
+    arq_dados.write(bproximo)
+    arq_dados.seek(int.from_bytes(batual), os.SEEK_SET)
+    arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
+    arq_dados.write(byteoffset.to_bytes(TAM_PONTEIRO_LED))
 
 def imprime_led():
     try:
@@ -248,7 +270,7 @@ def imprime_led():
             arq_dados.seek(offset, os.SEEK_SET)
             tam_registro = int.from_bytes(arq_dados.read(TAM_TAMANHO_REG))
             espacos_disponiveis += 1
-            print('[offset: ' + str(offset) + ', tam: ' + str(tam_registro) + ' -> ', end='')
+            print('[offset: ' + str(offset) + ', tam: ' + str(tam_registro) + '] -> ', end='')
             arq_dados.seek(offset, os.SEEK_SET)
             arq_dados.seek(TAM_TAMANHO_REG + len(CARACTERE_REMOCAO), os.SEEK_CUR)
             offset = int.from_bytes(arq_dados.read(TAM_PONTEIRO_LED))
