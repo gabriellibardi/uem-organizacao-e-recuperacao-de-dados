@@ -10,7 +10,7 @@ TAM_CABECALHO = 4
 TAM_TAMANHO_REG = 2
 TAM_PONTEIRO_LED = 4
 PONTEIRO_VAZIO = b'\xff\xff\xff\xff'
-CARACTERE_REMOCAO = '*'
+CARACTERE_REMOCAO = b'*'
 
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3: # Verifica se o programa recebe o número correto de argumentos
@@ -78,7 +78,7 @@ def executa_busca(chave: str):
         exit()
     registro = busca(arq_dados, chave)[0]
     print('Busca pelo registro de chave "' + chave + '"')
-    print(registro + '\n')
+    print(registro + ' (' + str(len(registro)) + ' bytes)\n')
     arq_dados.close()
 
 def executa_insercao(valor: bytes, chave: str):
@@ -116,23 +116,23 @@ def executa_remocao(chave: str):
 def busca(arq_dados: io.BufferedReader, chave_buscada: str) -> tuple[str, int, int]:
     '''
     Busca um registro no *arq_dados* com a chave primária *chave_buscada*
-    e retorna uma tupla, contento o registro, seu byte-offset e tamanho.
+    e retorna uma tupla, contento o registro, seu offset e tamanho.
     '''
     cabecalho = arq_dados.read(TAM_CABECALHO)
     registro, tamanho = le_registro(arq_dados)
     achou = False
-    byteoffset = TAM_CABECALHO
+    offset = TAM_CABECALHO
 
     while registro and not achou:
         chave_atual = registro.split('|')[0]
         if chave_atual == chave_buscada:
             achou = True
         else:
-            byteoffset += TAM_TAMANHO_REG + tamanho
+            offset += TAM_TAMANHO_REG + tamanho
             registro, tamanho = le_registro(arq_dados)
 
     if achou:
-        return registro, byteoffset, tamanho
+        return registro, offset, tamanho
     else:
         return 'Registro não encontrado.', -1, 0
 
@@ -143,15 +143,31 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int]:
     '''
     bcabecalho = arq_dados.read(TAM_CABECALHO)
     cabecalho = int.from_bytes(bcabecalho)
+    arq_dados.seek(cabecalho, os.SEEK_SET)
+    tam_atual = int.from_bytes(arq_dados.read(TAM_TAMANHO_REG))
     tam_dado = len(bdado)
 
-    if (bcabecalho == PONTEIRO_VAZIO) or (cabecalho < tam_dado):
+    if (bcabecalho == PONTEIRO_VAZIO) or (tam_atual < tam_dado):
         # LED tá vazia ou o dado não cabe no arquivo
         local = 'fim do arquivo'
         insercao_fim(arq_dados, bdado)
-    else:
-        local = 'na LED'
-        insercao_meio()
+    else: # O registro vai entrar no primeiro espaço da LED
+        local = str(cabecalho)
+        arq_dados.seek(cabecalho, os.SEEK_SET)
+        arq_dados.write(tam_dado.to_bytes(TAM_TAMANHO_REG))
+        arq_dados.seek(len(CARACTERE_REMOCAO), os.SEEK_CUR)
+        proximo = arq_dados.read(TAM_PONTEIRO_LED)
+        arq_dados.seek(cabecalho + TAM_TAMANHO_REG, os.SEEK_SET)
+        arq_dados.write(bdado)
+        arq_dados.seek(0, os.SEEK_SET)
+        arq_dados.write(proximo) # Atualiza a cabeça da LED
+        tam_restante = tam_atual - tam_dado
+        if tam_restante > 10: # Espaço restante volta pra LED
+            offset = cabecalho + TAM_TAMANHO_REG + tam_dado
+            arq_dados.seek(offset, os.SEEK_SET)
+            arq_dados.write(tam_restante.to_bytes(TAM_TAMANHO_REG))
+            arq_dados.write(CARACTERE_REMOCAO)
+            insercao_led(arq_dados, offset, tam_restante)
     return local, tam_dado
 
 def remocao(arq_dados: io.BufferedRandom, chave: str) -> tuple[bool, int, int]:
@@ -160,14 +176,14 @@ def remocao(arq_dados: io.BufferedRandom, chave: str) -> tuple[bool, int, int]:
     Retorna uma tupla com um bool, indicando se a remoção foi feita,
     o número de bytes removidos e o byteoffset do registro removido
     '''
-    registro, byteoffset, tamanho = busca(arq_dados, chave)
+    registro, offset, tamanho = busca(arq_dados, chave)
     if tamanho == 0:
         return False, 0, -1
     else:
-        arq_dados.seek(byteoffset + TAM_TAMANHO_REG, os.SEEK_SET)
-        arq_dados.write(CARACTERE_REMOCAO.encode()) # inserindo o indicador de remoção
-        insercao_led(arq_dados, byteoffset, tamanho)
-        return True, tamanho, byteoffset
+        arq_dados.seek(offset + TAM_TAMANHO_REG, os.SEEK_SET)
+        arq_dados.write(CARACTERE_REMOCAO) # inserindo o indicador de remoção
+        insercao_led(arq_dados, offset, tamanho)
+        return True, tamanho, offset
 
 def le_registro(arq: io.BufferedReader) -> tuple[str, int]:
     '''
@@ -178,7 +194,7 @@ def le_registro(arq: io.BufferedReader) -> tuple[str, int]:
     tam_registro = int.from_bytes(btam_registro)
     if tam_registro > 0:
         bbuffer = arq.read(tam_registro)
-        if bbuffer[:len(CARACTERE_REMOCAO)].decode() == CARACTERE_REMOCAO: # Caractere removido
+        if bbuffer[:len(CARACTERE_REMOCAO)] == CARACTERE_REMOCAO: # Caractere removido
             return ('', 0)
         else:
             buffer = bbuffer.decode()
@@ -199,7 +215,7 @@ def insercao_fim(arq_dados: io.BufferedRandom, bdado: bytes):
 def insercao_meio():
     return NotImplementedError
 
-def insercao_led(arq_dados: io.BufferedRandom, byteoffset: int, tamanho: int):
+def insercao_led(arq_dados: io.BufferedRandom, offset: int, tamanho: int):
     '''
     Insere o *byteoffset* do registro na LED mantida no *arq_dados*.
     A LED leva em conta a organização worst-fit, sendo ordenada
@@ -209,16 +225,16 @@ def insercao_led(arq_dados: io.BufferedRandom, byteoffset: int, tamanho: int):
     cabecalho = arq_dados.read(TAM_CABECALHO)
 
     if cabecalho == PONTEIRO_VAZIO: # LED vazia
-        insercao_cabeca_led(arq_dados, byteoffset, cabecalho)
+        insercao_cabeca_led(arq_dados, offset, cabecalho)
     else:
         bproximo = cabecalho
         arq_dados.seek(int.from_bytes(bproximo), os.SEEK_SET)
         tam_proximo = int.from_bytes(arq_dados.read(TAM_TAMANHO_REG))
 
         if tam_proximo <= tamanho: # Registro vai entrar na cabeça da LED
-            insercao_cabeca_led(arq_dados, byteoffset, bproximo)
+            insercao_cabeca_led(arq_dados, offset, bproximo)
         else: # Registro vai entrar no meio da LED
-            insercao_meio_led(arq_dados, byteoffset, bproximo, tamanho, tam_proximo)
+            insercao_meio_led(arq_dados, offset, bproximo, tamanho, tam_proximo)
 
 def insercao_cabeca_led(arq_dados:io.BufferedRandom, byteoffset: int, cabeca_atual: bytes):
     '''
