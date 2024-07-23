@@ -2,24 +2,22 @@ import sys
 import io
 import os
 
-# Arquivo de dados formado por um cabeçalho de 4 bytes, onde
-# cada registro é precedido por 2 bytes, que informam seu tamanho.
-
 NOME_ARQ_DADOS = 'dados.dat'
 TAM_CABECALHO = 4
 TAM_TAMANHO_REG = 2
 TAM_PONTEIRO_LED = 4
 PONTEIRO_VAZIO = b'\xff\xff\xff\xff'
 CARACTERE_REMOCAO = b'*'
+SOBRA_MIN_LED = 10
 
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3: # Verifica se o programa recebe o número correto de argumentos
         raise TypeError('Número inválido de argumentos.')      
 
-    if sys.argv[1] == '-e':
+    if sys.argv[1] == '-e': # Aplica o arquivo de operações
         le_operacoes()
         exit()
-    elif sys.argv[1] == '-p':
+    elif sys.argv[1] == '-p': # Imprime a LED
         imprime_led()
         exit()
     else:
@@ -78,7 +76,10 @@ def executa_busca(chave: str):
         exit()
     registro = busca(arq_dados, chave)[0]
     print('Busca pelo registro de chave "' + chave + '"')
-    print(registro + ' (' + str(len(registro)) + ' bytes)\n')
+    if registro == '':
+        print('Registro não encontrado!\n')
+    else:
+        print(registro + ' (' + str(len(registro)) + ' bytes)\n')
     arq_dados.close()
 
 def executa_insercao(valor: bytes, chave: str):
@@ -90,9 +91,16 @@ def executa_insercao(valor: bytes, chave: str):
     except:
         print('Arquivo de dados não encontrado.')
         exit()
-    local, tamanho = insercao(arq_dados, valor)
-    print('Inserção do registro de chave "' + chave + '" (' + str(tamanho) + ' bytes)')    
-    print('Local: ' + local + '\n')
+    local, tamanho, tam_reutilizado, sobra = insercao(arq_dados, valor)
+    print('Inserção do registro de chave "' + chave + '" (' + str(tamanho) + ' bytes)')
+    if local == 'fim do arquivo':
+        print('Local: ' + local + '\n')
+    else: # Foi inserido na LED
+        local_hex = hex(int(local))
+        print('Tamanho do espaço reutilizado: ' + str(tam_reutilizado) + ' bytes', end='')
+        if sobra > SOBRA_MIN_LED: # Retornou uma sobra para a LED
+            print(' (Sobra de ' + str(sobra) + ' bytes)', end='')
+        print('\nLocal: offset = ' + local + ' bytes (' + str(local_hex) + ')\n')
     arq_dados.close()
 
 def executa_remocao(chave: str):
@@ -134,12 +142,14 @@ def busca(arq_dados: io.BufferedReader, chave_buscada: str) -> tuple[str, int, i
     if achou:
         return registro, offset, tamanho
     else:
-        return 'Registro não encontrado.', -1, 0
+        return '', -1, 0
 
-def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int]:
+def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int, int, int]:
     '''
     Insere o *bdado* no *arq_dados* e retorna o local que foi inserido e seu tamanho.
     O *arq_dados* e o *bdado* e estão em binário.
+    Caso o registro entre em um espaço que estava na LED, retorna também o tamanho
+    do espaço e a sobra que retornou para a LED, caso possua uma
     '''
     bcabecalho = arq_dados.read(TAM_CABECALHO)
     cabecalho = int.from_bytes(bcabecalho)
@@ -150,6 +160,7 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int]:
     if (bcabecalho == PONTEIRO_VAZIO) or (tam_atual < tam_dado):
         # LED tá vazia ou o dado não cabe no arquivo
         local = 'fim do arquivo'
+        tam_atual = tam_restante = 0
         insercao_fim(arq_dados, bdado)
     else: # O registro vai entrar no primeiro espaço da LED
         local = str(cabecalho)
@@ -161,14 +172,14 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int]:
         arq_dados.write(bdado)
         arq_dados.seek(0, os.SEEK_SET)
         arq_dados.write(proximo) # Atualiza a cabeça da LED
-        tam_restante = tam_atual - tam_dado
-        if tam_restante > 10: # Espaço restante volta pra LED
+        tam_restante = tam_atual - tam_dado - TAM_TAMANHO_REG
+        if tam_restante > SOBRA_MIN_LED: # Espaço restante volta pra LED
             offset = cabecalho + TAM_TAMANHO_REG + tam_dado
             arq_dados.seek(offset, os.SEEK_SET)
             arq_dados.write(tam_restante.to_bytes(TAM_TAMANHO_REG))
             arq_dados.write(CARACTERE_REMOCAO)
             insercao_led(arq_dados, offset, tam_restante)
-    return local, tam_dado
+    return local, tam_dado, tam_atual, tam_restante
 
 def remocao(arq_dados: io.BufferedRandom, chave: str) -> tuple[bool, int, int]:
     '''
@@ -211,9 +222,6 @@ def insercao_fim(arq_dados: io.BufferedRandom, bdado: bytes):
     arq_dados.seek(0, os.SEEK_END)
     arq_dados.write(tam_dado.to_bytes(TAM_TAMANHO_REG))
     arq_dados.write(bdado)
-
-def insercao_meio():
-    return NotImplementedError
 
 def insercao_led(arq_dados: io.BufferedRandom, offset: int, tamanho: int):
     '''
@@ -268,6 +276,11 @@ def insercao_meio_led(arq_dados:io.BufferedRandom, byteoffset: int, bproximo: by
     arq_dados.write(byteoffset.to_bytes(TAM_PONTEIRO_LED))
 
 def imprime_led():
+    '''
+    Imprime todos os registros que estão na LED do arquivo de dados e indica
+    quantos espaços disponíveis ela possui.
+    A LED segue a organização worst-fit.
+    '''
     try:
         arq_dados = open(NOME_ARQ_DADOS, 'br')
     except:
