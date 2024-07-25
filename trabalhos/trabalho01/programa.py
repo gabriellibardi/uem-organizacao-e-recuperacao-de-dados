@@ -158,10 +158,8 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int, int,
     arq_dados.seek(cabecalho, os.SEEK_SET)
     tam_atual = int.from_bytes(arq_dados.read(TAM_TAMANHO_REG))
     tam_dado = len(bdado)
-    print('cabe: ' + str(tam_atual))
-    print('tem: ' + str(tam_dado))
 
-    if (bcabecalho == PONTEIRO_VAZIO) or (tam_atual < tam_dado + TAM_TAMANHO_REG):
+    if (bcabecalho == PONTEIRO_VAZIO) or (tam_atual < tam_dado):
         # LED tá vazia ou o dado não cabe no arquivo
         local = 'fim do arquivo'
         tam_atual = tam_restante = 0
@@ -179,10 +177,14 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int, int,
         tam_restante = tam_atual - tam_dado - TAM_TAMANHO_REG
         if tam_restante > SOBRA_MIN_LED: # Espaço restante volta pra LED
             offset = cabecalho + TAM_TAMANHO_REG + tam_dado
+            print(offset)
             arq_dados.seek(offset, os.SEEK_SET)
             arq_dados.write(tam_restante.to_bytes(TAM_TAMANHO_REG))
             arq_dados.write(CARACTERE_REMOCAO)
             insercao_led(arq_dados, offset, tam_restante)
+        else:
+            arq_dados.seek(cabecalho, os.SEEK_SET)
+            arq_dados.write(tam_atual.to_bytes(TAM_TAMANHO_REG))
     return local, tam_dado, tam_atual, tam_restante
 
 def remocao(arq_dados: io.BufferedRandom, chave: str) -> tuple[bool, int, int]:
