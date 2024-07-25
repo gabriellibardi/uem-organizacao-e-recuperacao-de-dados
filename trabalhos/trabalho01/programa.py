@@ -175,9 +175,8 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int, int,
         arq_dados.seek(0, os.SEEK_SET)
         arq_dados.write(proximo) # Atualiza a cabeça da LED
         tam_restante = tam_atual - tam_dado - TAM_TAMANHO_REG
+        offset = cabecalho + TAM_TAMANHO_REG + tam_dado
         if tam_restante > SOBRA_MIN_LED: # Espaço restante volta pra LED
-            offset = cabecalho + TAM_TAMANHO_REG + tam_dado
-            print(offset)
             arq_dados.seek(offset, os.SEEK_SET)
             arq_dados.write(tam_restante.to_bytes(TAM_TAMANHO_REG))
             arq_dados.write(CARACTERE_REMOCAO)
@@ -185,6 +184,8 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int, int,
         else:
             arq_dados.seek(cabecalho, os.SEEK_SET)
             arq_dados.write(tam_atual.to_bytes(TAM_TAMANHO_REG))
+            arq_dados.seek(offset, os.SEEK_SET)
+            arq_dados.write(b'\0'.ljust(tam_restante + TAM_TAMANHO_REG))
     return local, tam_dado, tam_atual, tam_restante
 
 def remocao(arq_dados: io.BufferedRandom, chave: str) -> tuple[bool, int, int]:
