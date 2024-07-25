@@ -8,7 +8,7 @@ TAM_TAMANHO_REG = 2
 TAM_PONTEIRO_LED = 4
 PONTEIRO_VAZIO = b'\xff\xff\xff\xff'
 CARACTERE_REMOCAO = b'*'
-SOBRA_MIN_LED = 10
+SOBRA_MIN_LED = 15
 
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3: # Verifica se o programa recebe o número correto de argumentos
@@ -74,12 +74,14 @@ def executa_busca(chave: str):
     except:
         print('Arquivo de dados não encontrado.')
         exit()
-    registro = busca(arq_dados, chave)[0]
+    registro, local, tamanho = busca(arq_dados, chave)
     print('Busca pelo registro de chave "' + chave + '"')
     if registro == '':
         print('Registro não encontrado!\n')
     else:
-        print(registro + ' (' + str(len(registro)) + ' bytes)\n')
+        local_hex = hex(int(local))
+        print(registro + ' (' + str(len(registro)) + ' bytes)')
+        print('Local: offset = ' + str(local) + ' bytes (' + str(local_hex) + ')\n')
     arq_dados.close()
 
 def executa_insercao(valor: bytes, chave: str):
@@ -156,8 +158,10 @@ def insercao(arq_dados: io.BufferedRandom, bdado: bytes) -> tuple[str, int, int,
     arq_dados.seek(cabecalho, os.SEEK_SET)
     tam_atual = int.from_bytes(arq_dados.read(TAM_TAMANHO_REG))
     tam_dado = len(bdado)
+    print('cabe: ' + str(tam_atual))
+    print('tem: ' + str(tam_dado))
 
-    if (bcabecalho == PONTEIRO_VAZIO) or (tam_atual < tam_dado):
+    if (bcabecalho == PONTEIRO_VAZIO) or (tam_atual < tam_dado + TAM_TAMANHO_REG):
         # LED tá vazia ou o dado não cabe no arquivo
         local = 'fim do arquivo'
         tam_atual = tam_restante = 0
@@ -205,8 +209,8 @@ def le_registro(arq: io.BufferedReader) -> tuple[str, int]:
     tam_registro = int.from_bytes(btam_registro)
     if tam_registro > 0:
         bbuffer = arq.read(tam_registro)
-        if bbuffer[:len(CARACTERE_REMOCAO)] == CARACTERE_REMOCAO: # Caractere removido
-            return ('', 0)
+        if bbuffer[:len(CARACTERE_REMOCAO)] == CARACTERE_REMOCAO: # Registro removido
+            return ('registro removido', tam_registro)
         else:
             buffer = bbuffer.decode()
             return (buffer, tam_registro)
