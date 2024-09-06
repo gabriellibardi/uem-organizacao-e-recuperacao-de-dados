@@ -6,7 +6,6 @@ import arvoreb
 NOME_ARQ_DADOS : str = 'games.dat' # Nome do arquivo de registros
 NOME_ARQ_SAIDA : str = 'btree.dat' # Nome do arquivo de armazenamento do índice
 
-
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3: # Verifica se o programa recebe o número correto de argumentos
         print('Número inválido de argumentos.')
@@ -35,8 +34,6 @@ def cria_indice():
     '''
     Cria um índice com os registros do arquivo de registros como uma árvore-b
     '''
-
-
 
 if __name__ == '__main__':
     main()
