@@ -1,11 +1,11 @@
 import sys 
 import io
 import os
-from arvoreb import Pagina
+import arvoreb
 
-ORDEM : int = 3 # Ordem da árvore-b
 NOME_ARQ_DADOS : str = 'games.dat' # Nome do arquivo de registros
 NOME_ARQ_SAIDA : str = 'btree.dat' # Nome do arquivo de armazenamento do índice
+
 
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3: # Verifica se o programa recebe o número correto de argumentos
@@ -35,7 +35,8 @@ def cria_indice():
     '''
     Cria um índice com os registros do arquivo de registros como uma árvore-b
     '''
-    arvoreb = Pagina(ORDEM)
+
+
 
 if __name__ == '__main__':
     main()

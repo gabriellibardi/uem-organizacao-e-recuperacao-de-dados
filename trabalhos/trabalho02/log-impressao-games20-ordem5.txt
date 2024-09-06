@@ -1,0 +1,48 @@
+Pagina 0:
+Chaves = [6, 15, 17, 20]
+Offsets = [596, 753, 449, 905]
+Filhos = [-1, -1, -1, -1, -1]
+
+Pagina 1:
+Chaves = [103, 105, -1, -1]
+Offsets = [258, 704, -1, -1]
+Filhos = [-1, -1, -1, -1, -1]
+
+Pagina 2:
+Chaves = [27, 46, -1, -1]
+Offsets = [59, 857, -1, -1]
+Filhos = [0, 3, 5, -1, -1]
+
+Pagina 3:
+Chaves = [38, 41, 44, -1]
+Offsets = [647, 1115, 1018, -1]
+Filhos = [-1, -1, -1, -1, -1]
+
+Pagina 4:
+Chaves = [144, 147, -1, -1]
+Offsets = [1060, 536, -1, -1]
+Filhos = [-1, -1, -1, -1, -1]
+
+Pagina 5:
+Chaves = [58, 68, -1, -1]
+Offsets = [326, 186, -1, -1]
+Filhos = [-1, -1, -1, -1, -1]
+
+Pagina 6:
+Chaves = [178, 187, -1, -1]
+Offsets = [796, 110, -1, -1]
+Filhos = [-1, -1, -1, -1, -1]
+
+Pagina 7:
+Chaves = [115, 161, -1, -1]
+Offsets = [368, 955, -1, -1]
+Filhos = [1, 4, 6, -1, -1]
+
+- - - - - - - - - - Raiz  - - - - - - - - - -
+Pagina 8:
+Chaves = [80, -1, -1, -1]
+Offsets = [4, -1, -1, -1]
+Filhos = [2, 7, -1, -1, -1]
+- - - - - - - - - - - - - - - - - - - - - - -
+
+O índice "btree.dat" foi impresso com sucesso!

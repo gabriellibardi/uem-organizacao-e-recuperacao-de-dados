@@ -1,0 +1,20 @@
+b 103
+b 27
+b 6
+b 38
+i 173|Batman: Arkham City|2011|Action-adventure|Warneb Bros. Interactive Entertainment|"PlayStation 3, Xbox 360"|
+i 148|Ms. Pac-Man|1982|Maze|Midway|Arcade|
+i 181|Pac-Man|1980|Maze|Namco|Arcade|
+b 41
+b 148
+b 80
+b 58
+b 170
+i 135|The Witcher III: Wild Hunt|2015|Action role-playing|CD Projekt|"PC, PlayStation 4, Xbox One"|
+b 181
+b 198
+b 115
+b 44
+i 202|Tom Clancy's Splinter Cell|2002|Stealth|Ubisoft|Xbox|
+b 15
+i 181|Pac-Man|1980|Maze|Namco|Arcade|
