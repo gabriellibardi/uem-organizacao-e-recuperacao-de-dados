@@ -26,8 +26,8 @@ def executa_argumento():
         cria_indice()
     #elif sys.argv[1] == '-e':
         #le_operacoes()
-    #elif sys.argv[1] == '-p':
-        #imprime_indice()
+    elif sys.argv[1] == '-p':
+        imprime_indice()
     else:
         print('Argumento inválido.')
 
@@ -78,6 +78,18 @@ def le_chave(arq_dados: io.BufferedReader) -> tuple[int, int]:
     else:
         return -1, byteoffset
 
+def imprime_indice():
+    '''
+    Imprime na tela os elementos do arquivo de índices
+    '''
+    try:
+        arq_arvore = open(NOME_ARQ_SAIDA, 'rb')
+    except:
+        print('Arquivo de índices não encontrado.')
+        quit()
+
+    arvoreb.imprime_arvore(arq_arvore)
+    arq_arvore.close()
 
 if __name__ == '__main__':
     main()

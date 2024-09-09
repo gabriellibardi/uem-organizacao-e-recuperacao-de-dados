@@ -13,6 +13,27 @@ class Pagina:
         self.byteoffsets : list[int] = [-1] * (ORDEM - 1)
         self.filhos : list[int] = [-1] * ORDEM
 
+    def __str__(self) -> str:
+        buffer_chaves = ''
+        buffer_offsets = ''
+        buffer_filhos = ''
+
+        for i in range(self.num_chaves):
+            buffer_chaves += str(self.chaves[i]) + ' | '
+            buffer_offsets += str(self.byteoffsets[i]) + ' | '
+
+        for i in range(self.num_chaves + 1):
+            buffer_filhos += str(self.filhos[i]) + ' | '
+
+        buffer_chaves = buffer_chaves.removesuffix('| ')
+        buffer_offsets = buffer_offsets.removesuffix('| ')
+        buffer_filhos = buffer_filhos.removesuffix('| ')
+
+        buffer = 'Chaves: ' + buffer_chaves + \
+                 '\nOffsets: ' + buffer_offsets + \
+                 '\nFilhos: ' + buffer_filhos
+        return buffer
+
 
 def inicializa_arvore(arq_arvore: io.BufferedRandom):
     '''
@@ -24,7 +45,7 @@ def inicializa_arvore(arq_arvore: io.BufferedRandom):
     escreve_pagina(arq_arvore, 0, Pagina())
     arq_arvore.seek(0)
 
-def le_pagina(arq_arvore: io.BufferedRandom, rrn: int) -> Pagina:
+def le_pagina(arq_arvore: io.BufferedRandom | io.BufferedReader, rrn: int) -> Pagina:
     '''
     Lê e cria do arquivo da árvore a página com o rrn especificado de acordo
     com os dados armazenados
@@ -174,3 +195,28 @@ def insere_chave(arq_arvore: io.BufferedRandom, chave: int, byteoffset: int):
         escreve_pagina(arq_arvore, raiz, pagina_nova)
         arq_arvore.seek(0)
         arq_arvore.write(raiz.to_bytes(TAM_CABECALHO, signed=True, byteorder='little'))
+
+def imprime_arvore(arq_arvore: io.BufferedReader):
+    '''
+    Imprime os valores da árvore-b
+    '''
+    arq_arvore.seek(0, SEEK_END)
+    qnt_registros = (arq_arvore.tell() - TAM_CABECALHO) // TAM_ELEMENTOS_PAGINA
+    arq_arvore.seek(0)
+    raiz = int.from_bytes(arq_arvore.read(TAM_CABECALHO), signed=True, byteorder='little')
+    rrn = 0
+
+    while rrn < qnt_registros:
+        pagina = le_pagina(arq_arvore, rrn)
+        if pagina.num_chaves > 0:
+            if rrn == raiz:
+                print('-------------Raiz-------------')
+                print('Página ' + str(rrn))
+                print(pagina)
+                print('------------------------------')
+                print()
+            else:
+                print('Página ' + str(rrn))
+                print(pagina)
+                print()
+        rrn += 1
