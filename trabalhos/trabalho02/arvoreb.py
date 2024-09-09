@@ -201,22 +201,21 @@ def imprime_arvore(arq_arvore: io.BufferedReader):
     Imprime os valores da árvore-b
     '''
     arq_arvore.seek(0, SEEK_END)
-    qnt_registros = (arq_arvore.tell() - TAM_CABECALHO) // TAM_ELEMENTOS_PAGINA
+    qnt_paginas = (arq_arvore.tell() - TAM_CABECALHO) // TAM_PAGINA
     arq_arvore.seek(0)
     raiz = int.from_bytes(arq_arvore.read(TAM_CABECALHO), signed=True, byteorder='little')
     rrn = 0
 
-    while rrn < qnt_registros:
+    while rrn < qnt_paginas:
         pagina = le_pagina(arq_arvore, rrn)
-        if pagina.num_chaves > 0:
-            if rrn == raiz:
-                print('-------------Raiz-------------')
-                print('Página ' + str(rrn))
-                print(pagina)
-                print('------------------------------')
-                print()
-            else:
-                print('Página ' + str(rrn))
-                print(pagina)
-                print()
+        if rrn == raiz:
+            print('-------------Raiz-------------')
+            print('Página ' + str(rrn))
+            print(pagina)
+            print('------------------------------')
+            print()
+        else:
+            print('Página ' + str(rrn))
+            print(pagina)
+            print()
         rrn += 1

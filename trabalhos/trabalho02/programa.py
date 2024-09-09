@@ -2,8 +2,8 @@ import sys
 import io
 import arvoreb
 
-NOME_ARQ_DADOS : str = 'games20.dat' # Nome do arquivo de registros
-NOME_ARQ_SAIDA : str = 'btree2.dat' # Nome do arquivo de armazenamento do índice
+NOME_ARQ_DADOS : str = 'games.dat' # Nome do arquivo de registros
+NOME_ARQ_SAIDA : str = 'btree.dat' # Nome do arquivo de armazenamento do índice
 TAM_CABECALHO: int = 4 # Quantidade de bytes que o arquivo de registros usa para armazenar o cabeçalho
 TAM_TAM_REGISTRO: int = 2 # Quantidade de bytes que o arquivo de registros usa para armazenar o tamanho dos registros
 
@@ -58,7 +58,6 @@ def le_registros(arq_dados: io.BufferedReader, arq_arvore: io.BufferedRandom):
 
     while qnt_registros > 0:
         prox_chave, byteoffset = le_chave(arq_dados)
-        print(prox_chave, byteoffset)
         arvoreb.insere_chave(arq_arvore, prox_chave, byteoffset)
         qnt_registros -= 1
 
