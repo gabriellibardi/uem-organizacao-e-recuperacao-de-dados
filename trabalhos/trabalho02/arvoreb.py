@@ -1,7 +1,7 @@
 import io
 from os import SEEK_END
 
-ORDEM : int = 3 # Ordem da árvore-b
+ORDEM : int = 5 # Ordem da árvore-b
 TAM_CABECALHO : int = 4 # Quantidade de bytes que a árvore-b usa para armazenar o cabeçalho, que guarda a raíz da árvore
 TAM_ELEMENTOS_PAGINA: int = 4 # Quantidade de bytes para representar os elementos das páginas na árvore-b
 TAM_PAGINA = TAM_ELEMENTOS_PAGINA + 2 * (TAM_ELEMENTOS_PAGINA * (ORDEM - 1)) + TAM_ELEMENTOS_PAGINA * ORDEM # quantidade de bytes da página = qntChaves + chaves + bytesoffsets + filhos

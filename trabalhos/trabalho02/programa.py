@@ -24,8 +24,8 @@ def executa_argumento():
     '''
     if sys.argv[1] == '-c':
         cria_indice()
-    #elif sys.argv[1] == '-e':
-        #le_operacoes()
+    elif sys.argv[1] == '-e':
+        le_operacoes()
     elif sys.argv[1] == '-p':
         imprime_indice()
     else:
@@ -76,6 +76,58 @@ def le_chave(arq_dados: io.BufferedReader) -> tuple[int, int]:
         return chave, byteoffset
     else:
         return -1, byteoffset
+
+def le_operacoes():
+    '''
+    Lê e executa as operações do arquivo de operações no arquivo de índices
+    '''
+    try:
+        arq_operacoes = open(sys.argv[2], 'r')
+    except:
+        print('Arquivo de operações não encontrado.')
+        quit()       
+
+    try:
+        arq_arvore = open(NOME_ARQ_SAIDA, 'r+b')
+    except:
+        print('Arquivo de índices não encontrado.')
+        quit()
+
+    try:
+        arq_dados = open(NOME_ARQ_DADOS, 'rb')
+    except:
+        print('Arquivo de dados não encontrado.')
+        quit()
+    
+    linha = (arq_operacoes.readline()).strip()
+    while linha:
+        operacao = linha[:linha.find(' ')].strip()
+        arg = linha[linha.find(' '):].strip()
+        if operacao == 'b':
+            executa_busca(arq_arvore, arq_dados, int(arg))
+            print()
+        elif operacao == 'i':
+            #arvoreb.insere_na_arvore()
+            print('insercao\n')
+        else:
+            print('Operação inválida.')
+        linha = (arq_operacoes.readline()).strip()
+
+def executa_busca(arq_arvore: io.BufferedRandom, arq_dados: io.BufferedReader, chave: int):
+    '''
+    Executa a busca de um registro no índice por meio de sua chave
+    '''
+    print('Busca pelo registro de chave "' + str(chave) + '"')
+    arq_arvore.seek(0)
+    raiz = int.from_bytes(arq_arvore.read(arvoreb.TAM_CABECALHO), signed=True, byteorder='little')
+    achou, rrn, posicao = arvoreb.busca_na_arvore(arq_arvore, chave, raiz)
+    if achou:
+        pagina = arvoreb.le_pagina(arq_arvore, rrn)
+        arq_dados.seek(pagina.byteoffsets[posicao])
+        tam_registro = int.from_bytes(arq_dados.read(TAM_TAM_REGISTRO), signed=True, byteorder='little')
+        print((arq_dados.read(tam_registro)).decode())
+    else:
+        print('ERRO: registro não encontrado!')
 
 def imprime_indice():
     '''
